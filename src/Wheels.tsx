@@ -6,16 +6,17 @@ import Svg, {G, Path, Text as SvgText} from 'react-native-svg';
 interface RouletteProps {
   items: string[];
   colors: string[];
+  radius?: number;
 }
 
-const Roulette: React.FC<RouletteProps> = ({items, colors}) => {
+const Roulette: React.FC<RouletteProps> = ({items, colors, radius = 150}) => {
   const spinValue = useRef(new Animated.Value(0)).current;
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const startSpinning = () => {
     const randomValue = Math.floor(Math.random() * items.length);
 
-    setSelectedItem(items[randomValue]);
+    setSelectedIndex(randomValue);
 
     Animated.timing(spinValue, {
       toValue: randomValue + 5 * items.length, // 충분히 회전하게 설정
@@ -32,17 +33,23 @@ const Roulette: React.FC<RouletteProps> = ({items, colors}) => {
     outputRange: ['0deg', `${360 * items.length}deg`],
   }) as unknown as string; // 타입 오류를 방지하기 위해 string으로 캐스팅
 
-  const radius = 150; // 원의 반지름
   const anglePerItem = (2 * Math.PI) / items.length; // 아이템 당 각도
+  const anglePerItemDeg = 360 / items.length;
 
   return (
     <View style={styles.container}>
       <Animated.View style={{transform: [{rotate: spin}]}}>
         <Svg
-          width={radius * 2}
-          height={radius * 2}
-          viewBox={`0 0 ${radius * 2} ${radius * 2}`}>
-          <G origin={`${radius}, ${radius}`} rotation={Number(spinValue)}>
+          width={radius * 2 + 10}
+          height={radius * 2 + 10}
+          viewBox={`-5 -5 ${radius * 2 + 10} ${radius * 2 + 10}`}>
+          <G
+            origin={`${radius}, ${radius}`}
+            rotation={
+              selectedIndex
+                ? -(anglePerItemDeg * selectedIndex) - 90 - anglePerItemDeg / 2
+                : 0
+            }>
             {items.map((item, index) => {
               const startAngle = index * anglePerItem;
               const endAngle = startAngle + anglePerItem;
@@ -59,7 +66,7 @@ const Roulette: React.FC<RouletteProps> = ({items, colors}) => {
                     d={pathData}
                     fill={colors[index % colors.length]}
                     stroke="#000"
-                    strokeWidth="1"
+                    strokeWidth="3"
                   />
                   <SvgText
                     fill="#000"
@@ -93,8 +100,10 @@ const Roulette: React.FC<RouletteProps> = ({items, colors}) => {
         </Svg>
       </Animated.View>
       <Button title="Spin" onPress={startSpinning} />
-      {selectedItem && (
-        <Text style={styles.selectedItem}>Selected Item: {selectedItem}</Text>
+      {selectedIndex && (
+        <Text style={styles.selectedItem}>
+          Selected Item: {items[selectedIndex]}
+        </Text>
       )}
     </View>
   );
